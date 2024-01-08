@@ -8,6 +8,8 @@ A simple, yet cool way to show off your FL Studio projects to your friends and o
 - Secret mode (meaning others can't see what project you're working on)
 - Optional accurate FL Studio version (ex. FL Studio 20.8.4.1873)
 - A JSON-based easy-to-manage configuration system
+
+## Pros
 - Very lightweight and resource efficient
 - Uses only 2 external packages
 - Almost everything is commented, so the code is easily manageable and readable
