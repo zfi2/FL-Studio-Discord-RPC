@@ -20,7 +20,7 @@ A simple, yet cool way to show off your FL Studio projects to your friends and o
 
 ## Screenshots
 
-![RPC Screenshot 1](https://i.imgur.com/CXTsgQ7.png)
+![RPC Screenshot 1](https://i.imgur.com/KMC3QJx.png)
 
 ![RPC Screenshot 2](https://i.imgur.com/viJFFoI.png)
 
