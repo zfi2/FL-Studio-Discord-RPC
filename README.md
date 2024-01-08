@@ -6,7 +6,7 @@ A simple, yet cool way to show off your FL Studio projects to your friends and o
 ## Features
 
 - Secret mode (meaning others can't see what project you're working on)
-- Optional accurate FL Studio version (ex. FL Studio 20.8.4.1873)
+- Display optional accurate FL Studio version (ex. FL Studio 20.8.4.1873)
 - A JSON-based easy-to-manage configuration system
 
 ## Pros
