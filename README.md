@@ -9,7 +9,7 @@ A simple, yet cool way to show off your FL Studio projects to your friends and o
 - Optional accurate FL Studio version (ex. FL Studio 20.8.4.1873)
 - A JSON-based easy-to-manage configuration system
 - Very lightweight and resource efficient
-- Uses only 2 external packages
+- Uses only 3 external packages
 - Almost everything is commented, so the code is easily manageable and readable
 
 ## (Current) Cons
@@ -44,6 +44,7 @@ If you have any feedback, reach out to me on discord, my username is in my githu
 
 [DiscordRichPresence](https://github.com/Lachee/discord-rpc-csharp)\
 [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)
+[Colorful.Console](https://github.com/tomakita/Colorful.Console)
 
 
 
