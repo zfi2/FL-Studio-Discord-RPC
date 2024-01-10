@@ -123,8 +123,7 @@ public static class ConfigSettings
                     {
                         return Convert.ToInt32(defaultValueAttribute.Value);
                     }
-                    // Add other types if needed
-
+                    
                     return prop.GetValue(null) ?? defaultValueAttribute.Value.ToString();
                 });
 
