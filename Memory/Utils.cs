@@ -1,9 +1,12 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+
+using System.Drawing;
+using Console = Colorful.Console;
 
 // ClientID and settings
-using static ConfigValues; 
+using static ConfigValues;
 
 public static class Utils
 {
@@ -27,7 +30,7 @@ public static class Utils
             catch (Exception ex)
             {
                 // Handle exceptions and print an error message
-                Console.WriteLine($"Error finding main window title by process name: {ex.Message}");
+                Console.WriteLine($"Error finding main window title by process name: {ex.Message}", Color.Red);
 
                 // Return null in case of an exception
                 return null;
@@ -63,7 +66,9 @@ public static class Utils
                 catch (Exception ex)
                 {
                     // Handle exceptions and print an error message
-                    Console.WriteLine($"Error retrieving version information: {ex.Message}");
+                    Console.WriteLine($"Error retrieving version information: {ex.Message}", Color.Red);
+
+                    return null;
                 }
             }
         }
@@ -95,7 +100,7 @@ public static class Utils
                 // Retrieve the version information for FL Studio
                 Version accurateVersion = GetApplicationVersion("FL64") ?? GetApplicationVersion("FL");
 
-                // Set the app name to "FL Studio + for example 20.5.2.1576" if version information is available,
+                // Set the app name to (example) "FL Studio 20.5.2.1576" if the version information is available,
                 // otherwise set it to null
                 Info.AppName = accurateVersion != null ? $"FL Studio {accurateVersion}" : null;
             }

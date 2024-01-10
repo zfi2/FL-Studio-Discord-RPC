@@ -28,14 +28,18 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Colorful.Console, Version=1.2.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Colorful.Console.1.2.15\lib\net461\Colorful.Console.dll</HintPath>
+    </Reference>
     <Reference Include="DiscordRPC, Version=1.2.1.24, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\DiscordRichPresence.1.2.1.24\lib\net45\DiscordRPC.dll</HintPath>
     </Reference>
@@ -47,6 +51,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Security" />
@@ -63,7 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\Utils.cs" />
-    <Compile Include="Config\ConfigHelper.cs" />
+    <Compile Include="Config\Config.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
