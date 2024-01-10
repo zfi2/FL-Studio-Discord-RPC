@@ -43,7 +43,7 @@ If you have any feedback, reach out to me on discord, my username is in my githu
 ## Packages used
 
 [DiscordRichPresence](https://github.com/Lachee/discord-rpc-csharp)\
-[Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)
+[Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json)\
 [Colorful.Console](https://github.com/tomakita/Colorful.Console)
 
 
