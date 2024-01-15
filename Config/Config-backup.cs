@@ -7,7 +7,6 @@ using System.Linq;
 
 using System.Drawing;
 using Console = Colorful.Console;
-using System.Runtime.InteropServices;
 
 public static class ConfigValues
 {
@@ -70,42 +69,33 @@ public static class ConfigSettings
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Couldn't convert configuration values to the appropriate types: {ex.Message}", Color.Red);
-            Utils.LogException(ex, "ConvertValue");
+            Console.WriteLine($"Couldn't convert a configuration value to the appropriate type => {ex.Message}", Color.Red);
             return null;
         }
     }
 
     private static void SetValues(Dictionary<string, object> properties)
     {
-        try
-        {
-            // Get properties with default values and their attributes
-            var configProperties = typeof(ConfigValues)
-                .GetProperties()
-                .Where(prop => Attribute.IsDefined(prop, typeof(DefaultValueAttribute)));
+        // Get properties with default values and their attributes
+        var configProperties = typeof(ConfigValues)
+            .GetProperties()
+            .Where(prop => Attribute.IsDefined(prop, typeof(DefaultValueAttribute)));
 
-            foreach (var prop in configProperties)
+        foreach (var prop in configProperties)
+        {
+            if (properties.TryGetValue(prop.Name, out var value))
             {
-                if (properties.TryGetValue(prop.Name, out var value))
-                {
-                    // Convert the value to the appropriate type
-                    object convertedValue = ConvertValue(value, prop.PropertyType);
+                // Convert the value to the appropriate type
+                object convertedValue = ConvertValue(value, prop.PropertyType);
 
-                    // Set the value to the ConfigValues property
-                    prop.SetValue(null, convertedValue);
-                }
-                else
-                {
-                    // Handle missing properties in the loaded configuration
-                    Console.WriteLine($"Property {prop.Name} not found in the loaded configuration.", Color.Red);
-                }
+                // Set the value to the ConfigValues property
+                prop.SetValue(null, convertedValue);
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error setting configuration values: {ex.Message}", Color.Red);
-            Utils.LogException(ex, "SetValues");
+            else
+            {
+                // Handle missing property in loaded configuration
+                Console.WriteLine($"Property {prop.Name} not found in the loaded configuration.", Color.Red);
+            }
         }
     }
 
@@ -153,7 +143,6 @@ public static class ConfigSettings
         {
             // Handle exceptions (e.g., file I/O, JSON serialization, conversion)
             Console.WriteLine($"Error saving configuration: {ex.Message}", Color.Red);
-            Utils.LogException(ex, "SaveConfig");
         }
     }
 
@@ -174,7 +163,6 @@ public static class ConfigSettings
         {
             // Handle exceptions (e.g., file not found, invalid JSON format)
             Console.WriteLine($"Error loading configuration: {ex.Message}", Color.Red);
-            Utils.LogException(ex, "LoadConfig");
         }
     }
 }

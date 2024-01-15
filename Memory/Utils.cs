@@ -31,6 +31,7 @@ public static class Utils
             {
                 // Handle exceptions and print an error message
                 Console.WriteLine($"Error finding main window title by process name: {ex.Message}", Color.Red);
+                Utils.LogException(ex, "GetMainWindowsTitleByProcessNames");
 
                 // Return null in case of an exception
                 return null;
@@ -67,6 +68,7 @@ public static class Utils
                 {
                     // Handle exceptions and print an error message
                     Console.WriteLine($"Error retrieving version information: {ex.Message}", Color.Red);
+                    Utils.LogException(ex, "GetApplicationVersion");
 
                     return null;
                 }
@@ -75,6 +77,36 @@ public static class Utils
 
         // Return null if no processes with the specified name were found, or if version information couldn't be retrieved
         return null;
+    }
+
+    public static void LogException(Exception ex, string functionInfo = "")
+    {
+        try
+        {
+            string LogFilePath = "fls_rpc_error_log.txt";
+
+            // Log the exception details
+            using (StreamWriter writer = new StreamWriter(LogFilePath, true))
+            {
+                writer.WriteLine($"Timestamp: {DateTime.Now}");
+                writer.WriteLine($"Exception: {ex.Message}");
+                writer.WriteLine($"Stack trace: {ex.StackTrace}");
+
+                // Log function names
+                if (!string.IsNullOrEmpty(functionInfo))
+                {
+                    writer.WriteLine($"Function: {functionInfo}");
+                }
+
+                // Separator for better readability
+                writer.WriteLine(new string('-', 50)); 
+            }
+        }
+        catch (Exception logEx)
+        {
+            // Log a message to console in case writing to the log file fails
+            Console.WriteLine($"Error logging exception: {logEx.Message}");
+        }
     }
 
     public static FLInfo GetFLInfo()

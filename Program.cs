@@ -87,8 +87,9 @@ public static class Program
             {
                 // Handle exception (e.g., file not found, invalid JSON format)
                 Console.WriteLine($"Error loading configuration from file: {ex.Message}", Color.Red);
+                Utils.LogException(ex, "Main");
             }
-            // Ensure an extra newline after the configuration output
+            // Extra newline after the configuration output
             Console.WriteLine();
         }
 
@@ -112,7 +113,7 @@ public static class Program
             // Retrieve the FL Studio data constantly, so that we're up to date
             FLInfo FLStudioData = GetFLInfo();
 
-            // Invoke appropriate event handlers
+            // Invoke event handlers
             _Client.Invoke();
 
             // Check if AppName and ProjectName are both empty or null
