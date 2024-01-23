@@ -29,7 +29,7 @@ A simple, yet cool way to show off your FL Studio projects to your friends and o
 You can either simply run the pre-compiled release, or build it yourself! I currently use .NET Framework 4.8.1 (although you could probably downgrade it if you build the project yourself)
 ## Feedback
 
-If you have any feedback, reach out to me on discord, my username is in my github profile
+If you have any feedback, reach out to me on discord - my username is on my website, which is on my github profile
 
 
 ## Features that may (or may not) be added in the future
