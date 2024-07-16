@@ -52,5 +52,5 @@ If you have any feedback, reach out to me on discord - my username is on my webs
 
 ## License
 
-Copyright (c) 2024 zfi2\
+Copyright (c) 2024 1a1n\
 This project is licensed under the [MIT](https://opensource.org/license/mit/) License - see the [LICENSE](LICENSE) file for details.
