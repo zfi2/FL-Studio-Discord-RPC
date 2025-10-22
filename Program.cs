@@ -31,6 +31,9 @@ public static class Program
     // System tray icon
     private static NotifyIcon _trayIcon;
 
+    // Mutex for single-instance checking
+    private static Mutex _mutex;
+
     // Initialize a placeholder, because we don't want null reference exceptions
     private static RichPresence _RPC = new RichPresence()
     {
@@ -94,6 +97,20 @@ public static class Program
 
         // Create context menu
         var contextMenu = new ContextMenuStrip();
+
+        // Secret mode toggle
+        var secretModeItem = new ToolStripMenuItem("Secret Mode (Hide Project Name)");
+        secretModeItem.Checked = SecretMode;
+        secretModeItem.Click += (s, e) =>
+        {
+            SecretMode = !SecretMode;
+            secretModeItem.Checked = SecretMode;
+            // Save the current setting to config
+            SaveCurrentConfig(ConfigPath);
+        };
+        contextMenu.Items.Add(secretModeItem);
+
+        contextMenu.Items.Add(new ToolStripSeparator());
 
         // Auto-startup toggle
         var autoStartItem = new ToolStripMenuItem("Start with Windows");
@@ -172,42 +189,63 @@ public static class Program
         // Save default config with default values (also load it at startup, the function is already called in SaveConfig)
         SaveConfig(ConfigPath);
 
-        // Initialize the Rich Presence
-        InitializeRPC();
+        bool wasRunning = false;
 
-        // Initialize a timestamp if it's enabled in the config
-        if (ShowTimestamp)
-        {
-            _RPC.Timestamps = new Timestamps()
-            {
-                Start = DateTime.UtcNow
-            };
-        }
-
-        // If client is valid, continue the loop
-        while (_Client != null)
+        // Continuous monitoring loop
+        while (true)
         {
             try
             {
-                // Retrieve the FL Studio data constantly, so that we're up to date
+                // Retrieve the FL Studio data constantly
                 FLInfo FLStudioData = GetFLInfo();
 
-                // Invoke event handlers
-                _Client.Invoke();
+                // Check if FL Studio is running
+                bool isRunning = !string.IsNullOrEmpty(FLStudioData.AppName) || !string.IsNullOrEmpty(FLStudioData.ProjectName);
 
-                // Check if AppName and ProjectName are both empty or null
-                bool NoProject = string.IsNullOrEmpty(FLStudioData.AppName) && string.IsNullOrEmpty(FLStudioData.ProjectName);
+                if (isRunning)
+                {
+                    // FL Studio is running
+                    if (!wasRunning)
+                    {
+                        // FL Studio just started - initialize RPC
+                        InitializeRPC();
 
-                // Set details and state based on conditions
-                _RPC.Details = NoProject ? "FL Studio (inactive)" : FLStudioData.AppName;
-                _RPC.State = NoProject ? "No project" : FLStudioData.ProjectName ?? "Empty project";
+                        // Initialize timestamp if enabled
+                        if (ShowTimestamp)
+                        {
+                            _RPC.Timestamps = new Timestamps()
+                            {
+                                Start = DateTime.UtcNow
+                            };
+                        }
 
-                // Check if secret mode is enabled and set the state accordingly
-                if (SecretMode)
-                    _RPC.State = "Working on a hidden project";
+                        wasRunning = true;
+                    }
 
-                // Finally, set the presence
-                _Client?.SetPresence(_RPC);
+                    // Update presence with current FL Studio info
+                    _RPC.Details = FLStudioData.AppName;
+                    _RPC.State = FLStudioData.ProjectName ?? "Empty project";
+
+                    // Check if secret mode is enabled
+                    if (SecretMode)
+                        _RPC.State = "Working on a hidden project";
+
+                    // Invoke event handlers and set presence
+                    _Client?.Invoke();
+                    _Client?.SetPresence(_RPC);
+                }
+                else
+                {
+                    // FL Studio is not running
+                    if (wasRunning)
+                    {
+                        // FL Studio just closed - clear presence and dispose client
+                        _Client?.ClearPresence();
+                        _Client?.Dispose();
+                        _Client = null;
+                        wasRunning = false;
+                    }
+                }
 
                 // Sleep for the interval defined in the config file
                 Thread.Sleep(UpdateInterval);
@@ -223,6 +261,22 @@ public static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // Check if another instance is already running
+        bool createdNew;
+        _mutex = new Mutex(true, "FLStudioRPC_SingleInstance", out createdNew);
+
+        if (!createdNew)
+        {
+            // Another instance is already running
+            MessageBox.Show(
+                "FL Studio Discord RPC is already running.\n\nCheck your system tray for the icon.",
+                "Already Running",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+            return; // Exit this instance
+        }
+
         // Enable auto-start by default if not already configured
         if (!IsAutoStartEnabled())
         {
@@ -241,5 +295,9 @@ public static class Program
 
         // Keep the application running (for the tray icon)
         Application.Run();
+
+        // Release the mutex when application exits
+        _mutex?.ReleaseMutex();
+        _mutex?.Dispose();
     }
 }
