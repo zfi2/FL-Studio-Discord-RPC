@@ -110,6 +110,32 @@ public static class ConfigSettings
     }
 
 
+    public static void SaveCurrentConfig(string filePath)
+    {
+        try
+        {
+            // Get current values from ConfigValues properties
+            var properties = typeof(ConfigValues)
+                .GetProperties()
+                .Where(prop => Attribute.IsDefined(prop, typeof(DefaultValueAttribute)))
+                .ToDictionary(
+                    prop => prop.Name,
+                    prop => prop.GetValue(null) // Get current value, not default
+                );
+
+            // Serialize the current properties to JSON
+            string json = JsonConvert.SerializeObject(properties, Formatting.Indented);
+
+            // Write to file
+            File.WriteAllText(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving current configuration: {ex.Message}", Color.Red);
+            Utils.LogException(ex, "SaveCurrentConfig");
+        }
+    }
+
     public static void SaveConfig(string filePath)
     {
         try
