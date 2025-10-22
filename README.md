@@ -15,6 +15,7 @@
   <a href="#building-from-source">Building From Source</a> •
   <a href="#packages-used">Packages Used</a> •
   <a href="#license">License</a>
+  <a href="#feedback">Feedback</a>
 </p>
 
 <p align="center"><img src="https://i.imgur.com/viJFFoI.png"></p>
