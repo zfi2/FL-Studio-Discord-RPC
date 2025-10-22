@@ -14,7 +14,7 @@
   <a href="#download">Download</a> •
   <a href="#building-from-source">Building From Source</a> •
   <a href="#packages-used">Packages Used</a> •
-  <a href="#license">License</a>
+  <a href="#license">License</a> •
   <a href="#feedback">Feedback</a>
 </p>
 
