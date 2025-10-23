@@ -25,8 +25,12 @@ public static class Program
     // Initialize a new Rich Presence client
     public static DiscordRpcClient _Client;
 
-    // Configuration file location
-    public static readonly string ConfigPath = "fls_rpc_config.json";
+    // Configuration file location (in AppData to avoid permission issues)
+    public static readonly string ConfigPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "FLStudioRPC",
+        "fls_rpc_config.json"
+    );
 
     // System tray icon
     private static NotifyIcon _trayIcon;
@@ -252,8 +256,24 @@ public static class Program
             }
             catch (Exception ex)
             {
-                // Log errors but keep running
-                File.WriteAllText("rpc_error.txt", $"Error: {ex.Message}\n{ex.StackTrace}");
+                // Log errors to a user-writable location
+                try
+                {
+                    string logPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "FLStudioRPC",
+                        "rpc_error.txt"
+                    );
+
+                    // Create directory if it doesn't exist
+                    Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+
+                    File.WriteAllText(logPath, $"Error: {ex.Message}\n{ex.StackTrace}");
+                }
+                catch
+                {
+                    // If we can't even write the log, just silently continue
+                }
             }
         }
     }
