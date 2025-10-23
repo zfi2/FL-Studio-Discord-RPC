@@ -114,6 +114,13 @@ public static class ConfigSettings
     {
         try
         {
+            // Ensure directory exists
+            string directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             // Get current values from ConfigValues properties
             var properties = typeof(ConfigValues)
                 .GetProperties()
@@ -140,6 +147,13 @@ public static class ConfigSettings
     {
         try
         {
+            // Ensure directory exists
+            string directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             // Get properties with default values and their attributes
             var properties = typeof(ConfigValues)
                 .GetProperties()
