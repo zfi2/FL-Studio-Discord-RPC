@@ -1,0 +1,156 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Custom release notes (optional - describe what changed in this version)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          # Get the latest tag, or default to v1.0.2 if no tags exist
+          $latestTag = git describe --tags --abbrev=0 2>$null
+          if (-not $latestTag) {
+            $latestTag = "v1.0.2"
+          }
+          echo "Latest tag: $latestTag"
+          echo "current_tag=$latestTag" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          $currentTag = "${{ steps.get_tag.outputs.current_tag }}"
+          $versionOnly = $currentTag -replace '^v', ''
+          $versionParts = $versionOnly.Split('.')
+
+          $major = [int]$versionParts[0]
+          $minor = [int]$versionParts[1]
+          $patch = [int]$versionParts[2]
+
+          # Increment based on input
+          switch ("${{ github.event.inputs.version_bump }}") {
+            "major" {
+              $major++
+              $minor = 0
+              $patch = 0
+            }
+            "minor" {
+              $minor++
+              $patch = 0
+            }
+            "patch" {
+              $patch++
+            }
+          }
+
+          $newVersion = "v$major.$minor.$patch"
+          echo "New version: $newVersion"
+          echo "new_tag=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "new_version=$major.$minor.$patch" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Check if installer exists
+        id: check_installer
+        run: |
+          $installerPath = "installer_output\FLStudioRPC_Setup.exe"
+          if (Test-Path $installerPath) {
+            echo "Installer found at $installerPath"
+            echo "installer_exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "ERROR: Installer not found at $installerPath"
+            echo "Please compile the installer using Inno Setup before triggering this workflow"
+            echo "installer_exists=false" >> $env:GITHUB_OUTPUT
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Generate release body
+        id: release_body
+        run: |
+          $customNotes = "${{ github.event.inputs.release_notes }}"
+          $newTag = "${{ steps.new_version.outputs.new_tag }}"
+          $repo = "${{ github.repository }}"
+
+          $whatsChanged = if ($customNotes) {
+            $customNotes
+          } else {
+            "See the [commit history](https://github.com/$repo/commits/$newTag) for detailed changes."
+          }
+
+          $body = @"
+          ## FL Studio Discord RPC $newTag
+
+          ### Download
+          Download ``FLStudioRPC_Setup.exe`` below to install or update.
+
+          ### Installation
+          1. Download the installer
+          2. Run ``FLStudioRPC_Setup.exe``
+          3. Follow the installation wizard
+          4. The app will start automatically in your system tray
+
+          ### What's Changed
+          $whatsChanged
+
+          ---
+
+          🤖 Generated with GitHub Actions
+          "@
+
+          # Save to output (escape for multiline)
+          $body | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append -NoNewline
+          echo "body<<EOF" >> $env:GITHUB_OUTPUT
+          echo $body >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Create Release
+        if: steps.check_installer.outputs.installer_exists == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.new_version.outputs.new_tag }}
+          name: Release ${{ steps.new_version.outputs.new_tag }}
+          body: ${{ steps.release_body.outputs.body }}
+          files: |
+            installer_output/FLStudioRPC_Setup.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        if: success()
+        run: |
+          echo "✅ Release created successfully!"
+          echo ""
+          echo "Version: ${{ steps.new_version.outputs.new_tag }}"
+          echo "Previous: ${{ steps.get_tag.outputs.current_tag }}"
+          echo ""
+          echo "View the release at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.new_tag }}"
+        shell: pwsh
