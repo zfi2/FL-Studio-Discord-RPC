@@ -34,7 +34,10 @@ jobs:
         id: get_tag
         run: |
           # Get the latest tag, or default to v1.0.2 if no tags exist
+          $ErrorActionPreference = 'SilentlyContinue'
           $latestTag = git describe --tags --abbrev=0 2>$null
+          $ErrorActionPreference = 'Stop'
+
           if (-not $latestTag) {
             $latestTag = "v1.0.2"
           }
