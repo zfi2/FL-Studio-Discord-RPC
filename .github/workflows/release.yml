@@ -13,7 +13,7 @@ on:
           - minor
           - major
       release_notes:
-        description: 'Custom release notes (optional - describe what changed in this version)'
+        description: 'Custom release notes (optional)'
         required: false
         type: string
 
@@ -32,25 +32,18 @@ jobs:
 
       - name: Get latest tag
         id: get_tag
+        shell: pwsh
         run: |
-          # Get the latest tag, or default to v1.0.2 if no tags exist
-          try {
-            $latestTag = git describe --tags --abbrev=0 2>&1 | Out-String
-            $latestTag = $latestTag.Trim()
-          } catch {
-            $latestTag = ""
-          }
-
-          if ([string]::IsNullOrWhiteSpace($latestTag) -or $latestTag -like "*fatal*" -or $latestTag -like "*No names found*") {
+          $latestTag = git tag --sort=-v:refname | Select-Object -First 1
+          if (-not $latestTag) {
             $latestTag = "v1.0.2"
           }
-
-          echo "Latest tag: $latestTag"
-          echo "current_tag=$latestTag" >> $env:GITHUB_OUTPUT
-        shell: pwsh
+          Write-Output "Latest tag: $latestTag"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "current_tag=$latestTag"
 
       - name: Calculate new version
         id: new_version
+        shell: pwsh
         run: |
           $currentTag = "${{ steps.get_tag.outputs.current_tag }}"
           $versionOnly = $currentTag -replace '^v', ''
@@ -60,7 +53,6 @@ jobs:
           $minor = [int]$versionParts[1]
           $patch = [int]$versionParts[2]
 
-          # Increment based on input
           switch ("${{ github.event.inputs.version_bump }}") {
             "major" {
               $major++
@@ -77,74 +69,67 @@ jobs:
           }
 
           $newVersion = "v$major.$minor.$patch"
-          echo "New version: $newVersion"
-          echo "new_tag=$newVersion" >> $env:GITHUB_OUTPUT
-          echo "new_version=$major.$minor.$patch" >> $env:GITHUB_OUTPUT
-        shell: pwsh
+          Write-Output "New version: $newVersion"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "new_tag=$newVersion"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "new_version=$major.$minor.$patch"
 
       - name: Check if installer exists
         id: check_installer
+        shell: pwsh
         run: |
           $installerPath = "installer_output\FLStudioRPC_Setup.exe"
           if (Test-Path $installerPath) {
-            echo "Installer found at $installerPath"
-            echo "installer_exists=true" >> $env:GITHUB_OUTPUT
+            Write-Output "Installer found at $installerPath"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_exists=true"
           } else {
-            echo "ERROR: Installer not found at $installerPath"
-            echo "Please compile the installer using Inno Setup before triggering this workflow"
-            echo "installer_exists=false" >> $env:GITHUB_OUTPUT
+            Write-Output "ERROR: Installer not found at $installerPath"
+            Write-Output "Please compile the installer using Inno Setup before triggering this workflow"
             exit 1
           }
-        shell: pwsh
 
-      - name: Generate release body
-        id: release_body
+      - name: Create release notes
+        id: release_notes
+        shell: pwsh
         run: |
           $customNotes = "${{ github.event.inputs.release_notes }}"
           $newTag = "${{ steps.new_version.outputs.new_tag }}"
           $repo = "${{ github.repository }}"
 
-          $whatsChanged = if ($customNotes) {
-            $customNotes
+          if ($customNotes) {
+            $changeLog = $customNotes
           } else {
-            "See the [commit history](https://github.com/$repo/commits/$newTag) for detailed changes."
+            $changeLog = "See the [commit history](https://github.com/$repo/commits/$newTag) for detailed changes."
           }
 
-          $body = @"
-## FL Studio Discord RPC $newTag
-
-### Download
-Download ``FLStudioRPC_Setup.exe`` below to install or update.
-
-### Installation
-1. Download the installer
-2. Run ``FLStudioRPC_Setup.exe``
-3. Follow the installation wizard
-4. The app will start automatically in your system tray
-
-### What's Changed
-$whatsChanged
-
----
-
-Generated with GitHub Actions
-"@
-
-          # Save multiline output properly
-          "body<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          $body | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-        shell: pwsh
+          $delimiter = "RELEASE_NOTES_EOF_$(Get-Random)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes<<$delimiter"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $changeLog
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $delimiter
 
       - name: Create Release
-        if: steps.check_installer.outputs.installer_exists == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.new_version.outputs.new_tag }}
           name: Release ${{ steps.new_version.outputs.new_tag }}
-          body: ${{ steps.release_body.outputs.body }}
-          files: |
-            installer_output/FLStudioRPC_Setup.exe
+          body: |
+            ## FL Studio Discord RPC ${{ steps.new_version.outputs.new_tag }}
+
+            ### Download
+            Download `FLStudioRPC_Setup.exe` below to install or update.
+
+            ### Installation
+            1. Download the installer
+            2. Run `FLStudioRPC_Setup.exe`
+            3. Follow the installation wizard
+            4. The app will start automatically in your system tray
+
+            ### What's Changed
+            ${{ steps.release_notes.outputs.notes }}
+
+            ---
+
+            Generated with GitHub Actions
+          files: installer_output/FLStudioRPC_Setup.exe
           draft: false
           prerelease: false
         env:
@@ -152,11 +137,11 @@ Generated with GitHub Actions
 
       - name: Release Summary
         if: success()
-        run: |
-          echo "✅ Release created successfully!"
-          echo ""
-          echo "Version: ${{ steps.new_version.outputs.new_tag }}"
-          echo "Previous: ${{ steps.get_tag.outputs.current_tag }}"
-          echo ""
-          echo "View the release at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.new_tag }}"
         shell: pwsh
+        run: |
+          Write-Output "Release created successfully!"
+          Write-Output ""
+          Write-Output "Version: ${{ steps.new_version.outputs.new_tag }}"
+          Write-Output "Previous: ${{ steps.get_tag.outputs.current_tag }}"
+          Write-Output ""
+          Write-Output "View the release at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.new_tag }}"
