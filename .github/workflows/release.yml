@@ -111,30 +111,29 @@ jobs:
           }
 
           $body = @"
-          ## FL Studio Discord RPC $newTag
+## FL Studio Discord RPC $newTag
 
-          ### Download
-          Download ``FLStudioRPC_Setup.exe`` below to install or update.
+### Download
+Download ``FLStudioRPC_Setup.exe`` below to install or update.
 
-          ### Installation
-          1. Download the installer
-          2. Run ``FLStudioRPC_Setup.exe``
-          3. Follow the installation wizard
-          4. The app will start automatically in your system tray
+### Installation
+1. Download the installer
+2. Run ``FLStudioRPC_Setup.exe``
+3. Follow the installation wizard
+4. The app will start automatically in your system tray
 
-          ### What's Changed
-          $whatsChanged
+### What's Changed
+$whatsChanged
 
-          ---
+---
 
-          🤖 Generated with GitHub Actions
-          "@
+Generated with GitHub Actions
+"@
 
-          # Save to output (escape for multiline)
-          $body | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append -NoNewline
-          echo "body<<EOF" >> $env:GITHUB_OUTPUT
-          echo $body >> $env:GITHUB_OUTPUT
-          echo "EOF" >> $env:GITHUB_OUTPUT
+          # Save multiline output properly
+          "body<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $body | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         shell: pwsh
 
       - name: Create Release
