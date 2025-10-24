@@ -34,13 +34,17 @@ jobs:
         id: get_tag
         run: |
           # Get the latest tag, or default to v1.0.2 if no tags exist
-          $ErrorActionPreference = 'SilentlyContinue'
-          $latestTag = git describe --tags --abbrev=0 2>$null
-          $ErrorActionPreference = 'Stop'
+          try {
+            $latestTag = git describe --tags --abbrev=0 2>&1 | Out-String
+            $latestTag = $latestTag.Trim()
+          } catch {
+            $latestTag = ""
+          }
 
-          if (-not $latestTag) {
+          if ([string]::IsNullOrWhiteSpace($latestTag) -or $latestTag -like "*fatal*" -or $latestTag -like "*No names found*") {
             $latestTag = "v1.0.2"
           }
+
           echo "Latest tag: $latestTag"
           echo "current_tag=$latestTag" >> $env:GITHUB_OUTPUT
         shell: pwsh
