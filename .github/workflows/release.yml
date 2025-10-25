@@ -1,0 +1,147 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Custom release notes (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_tag
+        shell: pwsh
+        run: |
+          $latestTag = git tag --sort=-v:refname | Select-Object -First 1
+          if (-not $latestTag) {
+            $latestTag = "v1.0.2"
+          }
+          Write-Output "Latest tag: $latestTag"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "current_tag=$latestTag"
+
+      - name: Calculate new version
+        id: new_version
+        shell: pwsh
+        run: |
+          $currentTag = "${{ steps.get_tag.outputs.current_tag }}"
+          $versionOnly = $currentTag -replace '^v', ''
+          $versionParts = $versionOnly.Split('.')
+
+          $major = [int]$versionParts[0]
+          $minor = [int]$versionParts[1]
+          $patch = [int]$versionParts[2]
+
+          switch ("${{ github.event.inputs.version_bump }}") {
+            "major" {
+              $major++
+              $minor = 0
+              $patch = 0
+            }
+            "minor" {
+              $minor++
+              $patch = 0
+            }
+            "patch" {
+              $patch++
+            }
+          }
+
+          $newVersion = "v$major.$minor.$patch"
+          Write-Output "New version: $newVersion"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "new_tag=$newVersion"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "new_version=$major.$minor.$patch"
+
+      - name: Check if installer exists
+        id: check_installer
+        shell: pwsh
+        run: |
+          $installerPath = "installer_output\FLStudioRPC_Setup.exe"
+          if (Test-Path $installerPath) {
+            Write-Output "Installer found at $installerPath"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_exists=true"
+          } else {
+            Write-Output "ERROR: Installer not found at $installerPath"
+            Write-Output "Please compile the installer using Inno Setup before triggering this workflow"
+            exit 1
+          }
+
+      - name: Create release notes
+        id: release_notes
+        shell: pwsh
+        run: |
+          $customNotes = "${{ github.event.inputs.release_notes }}"
+          $newTag = "${{ steps.new_version.outputs.new_tag }}"
+          $repo = "${{ github.repository }}"
+
+          if ($customNotes) {
+            $changeLog = $customNotes
+          } else {
+            $changeLog = "See the [commit history](https://github.com/$repo/commits/$newTag) for detailed changes."
+          }
+
+          $delimiter = "RELEASE_NOTES_EOF_$(Get-Random)"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "notes<<$delimiter"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $changeLog
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $delimiter
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.new_version.outputs.new_tag }}
+          name: Release ${{ steps.new_version.outputs.new_tag }}
+          body: |
+            ## FL Studio Discord RPC ${{ steps.new_version.outputs.new_tag }}
+
+            ### Download
+            Download `FLStudioRPC_Setup.exe` below to install or update.
+
+            ### Installation
+            1. Download the installer
+            2. Run `FLStudioRPC_Setup.exe`
+            3. Follow the installation wizard
+            4. The app will start automatically in your system tray
+
+            ### What's Changed
+            ${{ steps.release_notes.outputs.notes }}
+
+            ---
+
+            Generated with GitHub Actions
+          files: installer_output/FLStudioRPC_Setup.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        if: success()
+        shell: pwsh
+        run: |
+          Write-Output "Release created successfully!"
+          Write-Output ""
+          Write-Output "Version: ${{ steps.new_version.outputs.new_tag }}"
+          Write-Output "Previous: ${{ steps.get_tag.outputs.current_tag }}"
+          Write-Output ""
+          Write-Output "View the release at: https://github.com/${{ github.repository }}/releases/tag/${{ steps.new_version.outputs.new_tag }}"
